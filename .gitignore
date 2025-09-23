@@ -1,0 +1,12 @@
+.env
+node_modules
+dist
+.expo
+.expo-shared
+web-build
+*.log
+*.sqlite
+.vscode
+.vscode-test
+.vscode
+
