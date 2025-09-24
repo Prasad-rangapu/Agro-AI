@@ -4,8 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import LanguageService from '../services/LanguageService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const AuthScreen = ({ navigation }) => {
+const AuthScreen = ({ navigation, route }) => {
   const t = LanguageService.t;
+  const { selectedLanguage } = route.params || {}; // Get selected language
 
   return (
     <SafeAreaView style={styles.container}>

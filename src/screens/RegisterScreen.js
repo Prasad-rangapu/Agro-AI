@@ -16,6 +16,7 @@ const RegisterScreen = ({ navigation }) => {
     location: '',
   });
   const t = LanguageService.t;
+  const currentLanguage = LanguageService.getCurrentLanguage(); // Get current language
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -59,6 +60,7 @@ const RegisterScreen = ({ navigation }) => {
         mobileNumber,
         farmSize: parseFloat(farmSize),
         location,
+        language: currentLanguage, // Include language
       };
       await DatabaseService.createUserProfile(newUser);
       Alert.alert(t('success'), t('accountCreated'));

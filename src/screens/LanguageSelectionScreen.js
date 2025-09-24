@@ -1,15 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LanguageService from '../services/LanguageService';
+import DatabaseService from '../services/DatabaseService';
 
 const LanguageSelectionScreen = ({ navigation }) => {
   const [selectedLang, setSelectedLang] = useState(LanguageService.getCurrentLanguage());
   const t = LanguageService.t;
 
   const handleContinue = async () => {
-    await LanguageService.changeLanguage(selectedLang);
-    navigation.navigate('Auth');
+    try {
+      await LanguageService.changeLanguage(selectedLang);
+
+      // check user
+      const user = await DatabaseService.getUserProfile();
+      if (user) {
+        // persist language in DB for user
+        await DatabaseService.updateUserLanguage(user.id, selectedLang);
+        // reset to main app so Home will re-mount and show language
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        // no user -> go to auth flow (login/register)
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Auth' }],
+        });
+      }
+    } catch (err) {
+      console.error('Language select error', err);
+      // fallback: still navigate to auth
+      navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
+    }
   };
 
   return (

@@ -7,36 +7,27 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 // Make sure the path is correct
-import DatabaseService from './src/services/DatabaseService';
+
 // Screens
-import * as Location from 'expo-location';
-import HomeScreen from './src/screens/HomeScreen';
-import CropRecommendationScreen from './src/screens/CropRecommendationScreen';
-import DiseaseDetectionScreen from './src/screens/DiseaseDetectionScreen';
-import WeatherScreen from './src/screens/WeatherScreen';
 import LanguageSelectionScreen from './src/screens/LanguageSelectionScreen';
 import AuthScreen from './src/screens/AuthScreens';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import HomeScreen from './src/screens/HomeScreen';
+import CropRecommendationScreen from './src/screens/CropRecommendationScreen';
+import DiseaseDetectionScreen from './src/screens/DiseaseDetectionScreen';
+import WeatherScreen from './src/screens/WeatherScreen';
 
 // Services
+import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import MLService from './src/services/MLService';
+import DatabaseService from './src/services/DatabaseService';
 import LanguageService from './src/services/LanguageService';
-import { AuthContext, AuthProvider } from './src/context/AuthContext';
+import * as Location from 'expo-location';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-function AuthStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
-      <Stack.Screen name="Auth" component={AuthScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-    </Stack.Navigator>
-  );
-}
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -118,18 +109,24 @@ function AppContent() {
       // Initialize services
       await MLService.initialize();
       await DatabaseService.initialize(); // Initialize DatabaseService here
-          await LanguageService.initialize();
-      } catch (error) {
-          console.error('Error fetching location:', error);
-          Alert.alert(LanguageService.t('error'), LanguageService.t('locationError'));
+      await LanguageService.initialize();
+
+      // Load user profile and set language
+      const userProfile = await DatabaseService.getUserProfile();
+      if (userProfile?.language) {
+        await LanguageService.changeLanguage(userProfile.language);
       }
+    } catch (error) {
+      console.error('Error fetching location:', error);
+      Alert.alert(LanguageService.t('error'), LanguageService.t('locationError'));
+    }
 
-      // Check if user is already logged in
-      // restoreToken() is now called in the useEffect above
+    // Check if user is already logged in
+    // restoreToken() is now called in the useEffect above
 
-      setIsInitialized(true);
-      console.log('AgroAI app initialized successfully');
-   
+    setIsInitialized(true);
+    console.log('AgroAI app initialized successfully');
+
   };
 
   if (!isInitialized || !fontsLoaded) {
@@ -138,18 +135,41 @@ function AppContent() {
 
   return (
     <NavigationContainer>
-      {userToken ? (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="Weather">
-            {(props) => <WeatherScreen {...props} location={location} />}
-          </Stack.Screen>
-        </Stack.Navigator>
-
-      ) : (
-        <AuthStack />
-      )}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {userToken ? (
+          <>
+            <Stack.Screen name="Main" component={MainApp} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Auth" component={AuthStack} />
+          </>
+        )}
+      </Stack.Navigator>
     </NavigationContainer>
+  );
+}
+
+function MainApp({ location }) {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
+      <Stack.Screen name="Weather">
+        {(props) => <WeatherScreen {...props} location={location} />}
+      </Stack.Screen>
+    </Stack.Navigator>
+  );
+}
+
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} />
+      <Stack.Screen name="AuthScreen" component={AuthScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+    </Stack.Navigator>
   );
 }
 

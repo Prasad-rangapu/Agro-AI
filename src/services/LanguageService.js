@@ -1,28 +1,28 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEY = 'appLanguage';
 
 const resources = {
   en: {
     translation: {
       welcome: "Welcome to AgroAI",
+      welcomeBackUser: "Welcome back, {{name}}!",
+      changeLanguage: "Change Language",
+      quickActions: "Quick Actions",
+      farmStats: "Farm Stats",
+      farmSize: "Farm Size",
+      acres: "acres",
+      weatherForecast: "Weather Forecast",
       cropRecommendation: "Crop Recommendation",
       diseaseDetection: "Disease Detection",
-      weather: "Weather",
+      location: "Location",
       takePhoto: "Take Photo",
       selectLanguage: "Select Your Language",
       continue: "Continue",
       login: "Login",
       register: "Register",
-      welcomeBack: "Welcome Back!",
-      loginToContinue: "Login to your account to continue",
-      mobileNumber: "Mobile Number",
-      createAccount: "Create a New Account",
-      farmDetails: "Enter your details to get started",
-      name: "Name",
-      acresOfLand: "Acres of Land",
-      areaOfLand: "Area of Land (e.g., Village, City)",
-      gallery: "Gallery",
-      analyzing: "Analyzing...",
       healthy: "Healthy",
       treatment: "Treatment",
       error: "Error",
@@ -31,14 +31,10 @@ const resources = {
       invalidMobile: "Please enter a valid 10-digit mobile number.",
       accountCreated: "Account created successfully! You are now logged in.",
       accountCreateFailed: "Failed to create account. Please try again.",
-      welcomeBackUser: "Welcome back, {{name}}!",
       noAccountFound: "No account found with this mobile number. Please register.",
       alreadyHaveAccount: "Already have an account?",
       dontHaveAccount: "Don't have an account?",
       goBack: "Go Back",
-      changeLanguage: "Change Language",
-      smartFarmingAssistant: "Your Smart Farming Assistant",
-      continueBoth: "Continue / जारी रखें",
       permissionDenied: "Permission Denied",
       locationPermission: "Location access is needed to provide localized weather and advice.",
       micPermission: "Microphone access is needed for the voice assistant feature.",
@@ -50,33 +46,39 @@ const resources = {
       weatherError: "Failed to fetch weather data",
       voiceDemoError: "Voice recognition not available in this demo",
       initError: "Failed to initialize the app. Please restart.",
-      // Add more translations as needed
-       enterName: "Enter your name",
-       enterMobileNumber: "Enter your mobile number",
+      enterName: "Enter your name",
+      enterMobileNumber: "Enter your mobile number",
       enterLandArea: "Enter land area",
+      farmSize: 'Farm Size (acres)',
+      location: 'Location',
+      cameraPermissionError: 'Failed to request camera permission.',
+      selectImageError: 'Error selecting image.',
+      analyzing: 'Analyze Image',
+      analyzeError: 'Error analyzing image.',
+      home: 'Home',
+      crops: 'Crops',
+      disease: 'Disease',
+      weather: 'Weather',
+      gallery: 'Choose from Gallery',
     }
   },
   hi: {
     translation: {
       welcome: "एग्रोएआई में आपका स्वागत है",
+      welcomeBackUser: "वापसी पर स्वागत है, {{name}}!",
+      changeLanguage: "भाषा बदलें",
+      quickActions: "त्वरित क्रियाएँ",
+      farmStats: "खेत आँकड़े",
+      farmSize: "खेत का आकार",
+      acres: "एकड़",
+      weatherForecast: "मौसम पूर्वानुमान",
       cropRecommendation: "फसल सिफारिश",
-      diseaseDetection: "रोग की पहचान",
-      weather: "मौसम",
+      diseaseDetection: "रोग पहचान",
+      location: "स्थान",
       selectLanguage: "अपनी भाषा चुनें",
       continue: "जारी रखें",
       login: "लॉग इन करें",
       register: "पंजीकरण करें",
-      welcomeBack: "वापसी पर स्वागत है!",
-      loginToContinue: "जारी रखने के लिए अपने खाते में लॉगिन करें",
-      mobileNumber: "मोबाइल नंबर",
-      createAccount: "एक नया खाता बनाएँ",
-      farmDetails: "शुरू करने के लिए अपना विवरण दर्ज करें",
-      name: "नाम",
-      acresOfLand: "भूमि का एकड़",
-      areaOfLand: "भूमि का क्षेत्र (जैसे, गांव, शहर)",
-      takePhoto: "फोटो लें",
-      gallery: "गैलरी",
-      analyzing: "विश्लेषण हो रहा है...",
       healthy: "स्वस्थ",
       treatment: "उपचार",
       error: "त्रुटि",
@@ -85,14 +87,10 @@ const resources = {
       invalidMobile: "कृपया एक मान्य 10-अंकीय मोबाइल नंबर दर्ज करें।",
       accountCreated: "खाता सफलतापूर्वक बनाया गया! अब आप लॉग इन हैं।",
       accountCreateFailed: "खाता बनाने में विफल। कृपया पुनः प्रयास करें।",
-      welcomeBackUser: "वापसी पर स्वागत है, {{name}}!",
       noAccountFound: "इस मोबाइल नंबर से कोई खाता नहीं मिला। कृपया पंजीकरण करें।",
       alreadyHaveAccount: "पहले से ही एक खाता है?",
       dontHaveAccount: "खाता नहीं है?",
       goBack: "वापस जाओ",
-      changeLanguage: "भाषा बदलें",
-      smartFarmingAssistant: "आपका स्मार्ट खेती सहायक",
-      continueBoth: "Continue / जारी रखें",
       permissionDenied: "अनुमति अस्वीकृत",
       locationPermission: "स्थानीय मौसम और सलाह प्रदान करने के लिए स्थान की पहुंच आवश्यक है।",
       micPermission: "वॉयस असिस्टेंट सुविधा के लिए माइक्रोफोन की पहुंच आवश्यक है।",
@@ -104,9 +102,20 @@ const resources = {
       weatherError: "मौसम डेटा लाने में विफल",
       voiceDemoError: "इस डेमो में आवाज पहचान उपलब्ध नहीं है",
       initError: "ऐप को प्रारंभ करने में विफल। कृपया पुनरारंभ करें।",
-       enterName: "अपना नाम दर्ज करें",
-       enterMobileNumber: "अपना मोबाइल नंबर दर्ज करें",
+      enterName: "अपना नाम दर्ज करें",
+      enterMobileNumber: "अपना मोबाइल नंबर दर्ज करें",
       enterLandArea: "जमीन का क्षेत्रफल दर्ज करें",
+      farmSize: 'खेत का आकार (एकड़)',
+      location: 'स्थान',
+      cameraPermissionError: 'कैमरा अनुमति का अनुरोध करने में विफल।',
+      selectImageError: 'छवि चुनने में त्रुटि।',
+      analyzing: 'छवि का विश्लेषण करें',
+      analyzeError: 'छवि का विश्लेषण करने में त्रुटि।',
+      home: 'होम',
+      crops: 'फसलें',
+      disease: 'रोग',
+      weather: 'मौसम',
+      gallery: 'गैलरी से चुनें',
     }
   },
   te: {
@@ -115,7 +124,6 @@ const resources = {
       cropRecommendation: "పంట సిఫార్సు",
       diseaseDetection: "వ్యాధి నిర్ధారణ",
       weather: "వాతావరణం",
-      takePhoto: "ఫోటో తీయండి",
       selectLanguage: "మీ భాషను ఎంచుకోండి",
       continue: "కొనసాగించు",
       login: "లాగిన్",
@@ -143,9 +151,6 @@ const resources = {
       alreadyHaveAccount: "ఇప్పటికే ఖాతా ఉందా?",
       dontHaveAccount: "ఖాతా లేదా?",
       goBack: "వెనుకకు వెళ్ళు",
-      changeLanguage: "భాషను మార్చండి",
-      smartFarmingAssistant: "మీ స్మార్ట్ వ్యవసాయ సహాయకుడు",
-      continueBoth: "Continue / కొనసాగించు",
       permissionDenied: "అనుమతి నిరాకరించబడింది",
       locationPermission: "స్థానికీకరించిన వాతావరణం మరియు సలహాలను అందించడానికి లొకేషన్ యాక్సెస్ అవసరం.",
       micPermission: "వాయిస్ అసిస్టెంట్ ఫీచర్ కోసం మైక్రోఫోన్ యాక్సెస్ అవసరం.",
@@ -157,9 +162,20 @@ const resources = {
       weatherError: "వాతావరణ డేటాను పొందడంలో విఫలమైంది",
       voiceDemoError: "ఈ డెమోలో వాయిస్ రికగ్నిషన్ అందుబాటులో లేదు",
       initError: "యాప్‌ను ప్రారంభించడంలో విఫలమైంది. దయచేసి పునఃప్రారంభించండి.",
-       enterName: "మీ పేరును నమోదు చేయండి",
-       enterMobileNumber: "మీ మొబైల్ నంబర్‌ను నమోదు చేయండి",
+      enterName: "మీ పేరును నమోదు చేయండి",
+      enterMobileNumber: "మీ మొబైల్ నంబర్‌ను నమోదు చేయండి",
       enterLandArea: "భూమి విస్తీర్ణాన్ని నమోదు చేయండి",
+      farmSize: 'పొలం పరిమాణం (ఎకరాలు)',
+      location: 'స్థానం',
+      cameraPermissionError: 'కెమెరా అనుమతిని అభ్యర్థించడంలో విఫలమైంది.',
+      selectImageError: 'చిత్రాన్ని ఎంచుకోవడంలో లోపం.',
+      analyzing: 'చిత్రాన్ని విశ్లేషించండి',
+      analyzeError: 'చిత్రాన్ని విశ్లేషించడంలో లోపం.',
+      home: 'హోమ్',
+      crops: 'పంటలు',
+      disease: 'వ్యాధి',
+      weather: 'వాతావరణం',
+      gallery: 'గ్యాలరీ నుండి ఎంచుకోండి',
     }
   },
   ta: {
@@ -168,7 +184,6 @@ const resources = {
       cropRecommendation: "பயிர் பரிந்துரை",
       diseaseDetection: "நோய் கண்டறிதல்",
       weather: "வானிலை",
-      takePhoto: "புகைப்படம் எடு",
       selectLanguage: "உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்",
       continue: "தொடரவும்",
       login: "உள்நுழைய",
@@ -192,13 +207,10 @@ const resources = {
       accountCreated: "கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது! நீங்கள் இப்போது உள்நுழைந்துள்ளீர்கள்.",
       accountCreateFailed: "கணக்கை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.",
       welcomeBackUser: "மீண்டும் வருக, {{name}}!",
-      noAccountFound: "இந்த மொபைల్ எண்ணுடன் கணக்கு எதுவும் இல்லை. பதிவு செய்யவும்.",
+      noAccountFound: "இந்த மொபைல் எண்ணுடன் கணக்கு எதுவும் இல்லை. பதிவு செய்யவும்.",
       alreadyHaveAccount: "ஏற்கனவே கணக்கு உள்ளதா?",
       dontHaveAccount: "கணக்கு இல்லையா?",
       goBack: "பின் செல்",
-      changeLanguage: "மொழியை மாற்று",
-      smartFarmingAssistant: "உங்கள் έξυπൻ കൃഷി സഹായി",
-      continueBoth: "Continue / தொடரவும்",
       permissionDenied: "அனுமதி மறுக்கப்பட்டது",
       locationPermission: "உள்ளூர் வானிலை மற்றும் ஆலோசனைகளை வழங்க இருப்பிட அணுகல் தேவை.",
       micPermission: "குரல் உதவியாளர் அம்சத்திற்கு மைக்ரோஃபோன் அணுகல் தேவை.",
@@ -208,11 +220,22 @@ const resources = {
       selectImageError: "படத்தைத் தேர்ந்தெடுக்க முடியவில்லை",
       analyzeError: "படத்தை பகுப்பாய்வு செய்ய முடியவில்லை",
       weatherError: "வானிலை தரவைப் பெற முடியவில்லை",
-      voiceDemoError: "இந்த டெமோவில் குரல் గుర్తింపు கிடைக்கவில்லை",
+      voiceDemoError: "இந்த டெமோவில் குரல் அடையாளம் கிடைக்கவில்லை",
       initError: "பயன்பாட்டைத் தொடங்குவதில் தோல்வி. தயவுசெய்து மீண்டும் தொடங்கவும்.",
-       enterName: "உங்கள் பெயரை உள்ளிடவும்",
-       enterMobileNumber: "உங்கள் மொபைல் எண்ணை உள்ளிடவும்",
+      enterName: "உங்கள் பெயரை உள்ளிடவும்",
+      enterMobileNumber: "உங்கள் மொபைல் எண்ணை உள்ளிடவும்",
       enterLandArea: "நிலப் பரப்பளவை உள்ளிடவும்",
+      farmSize: 'பண்ணை அளவு (ஏக்கர்கள்)',
+      location: 'இடம்',
+      cameraPermissionError: 'கேமரா அனுமதியைக் கோர முடியவில்லை.',
+      selectImageError: 'படத்தைத் தேர்ந்தெடுப்பதில் பிழை.',
+      analyzing: 'படத்தை பகுப்பாய்வு செய்',
+      analyzeError: 'படத்தை பகுப்பாய்வு செய்வதில் பிழை.',
+      home: 'வீடு',
+      crops: 'பயிர்கள்',
+      disease: 'நோய்',
+      weather: 'வானிலை',
+      gallery: 'தொகுப்பு இருந்து தேர்வு செய்',
     }
   },
   kn: {
@@ -221,7 +244,6 @@ const resources = {
       cropRecommendation: "ಬೆಳೆ ಶಿಫಾರಸು",
       diseaseDetection: "ರೋಗ ಪತ್ತೆ",
       weather: "ಹವಾಮಾನ",
-      takePhoto: "ಫೋಟೋ ತೆಗೆಯಿರಿ",
       selectLanguage: "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
       continue: "ಮುಂದುವರಿಸಿ",
       login: "ಲಾಗಿನ್ ಮಾಡಿ",
@@ -249,9 +271,6 @@ const resources = {
       alreadyHaveAccount: "ಈಗಾಗಲೇ ಖಾತೆ ಇದೆಯೇ?",
       dontHaveAccount: "ಖಾತೆ ಇಲ್ಲವೇ?",
       goBack: "ಹಿಂದಕ್ಕೆ ಹೋಗಿ",
-      changeLanguage: "ಭಾಷೆ ಬದಲಾಯಿಸಿ",
-      smartFarmingAssistant: "ನಿಮ್ಮ ಸ್ಮಾರ್ಟ್ ಫಾರ್ಮಿಂಗ್ ಸಹಾಯಕ",
-      continueBoth: "Continue / ಮುಂದುವರಿಸಿ",
       permissionDenied: "ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ",
       locationPermission: "ಸ್ಥಳೀಯ ಹವಾಮಾನ ಮತ್ತು ಸಲಹೆಯನ್ನು ಒದಗಿಸಲು ಸ್ಥಳ ಪ್ರವೇಶದ ಅಗತ್ಯವಿದೆ.",
       micPermission: "ಧ್ವನಿ ಸಹಾಯಕ ವೈಶಿಷ್ಟ್ಯಕ್ಕಾಗಿ ಮೈಕ್ರೊಫೋನ್ ಪ್ರವೇಶದ ಅಗತ್ಯವಿದೆ.",
@@ -261,11 +280,22 @@ const resources = {
       selectImageError: "ಚಿತ್ರವನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ವಿಫಲವಾಗಿದೆ",
       analyzeError: "ಚಿತ್ರವನ್ನು ವಿಶ್ಲೇಷಿಸಲು ವಿಫಲವಾಗಿದೆ",
       weatherError: "ಹವಾಮಾನ ಡೇಟಾವನ್ನು ತರಲು ವಿಫಲವಾಗಿದೆ",
-      voiceDemoError: "ಈ ಡೆಮೊದಲ್ಲಿ ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆ ಲಭ್ಯವಿಲ್ಲ",
+      voiceDemoError: "ಈ ಡೆಮೋದಲ್ಲಿ ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆ ಲಭ್ಯವಿಲ್ಲ",
       initError: "ಅಪ್ಲಿಕೇಶನ್ ಅನ್ನು ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮರುಪ್ರಾರಂಭಿಸಿ.",
-       enterName: "ನಿಮ್ಮ ಹೆಸರನ್ನು ನಮೂದಿಸಿ",
-       enterMobileNumber: "ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+      enterName: "ನಿಮ್ಮ ಹೆಸರನ್ನು ನಮೂದಿಸಿ",
+      enterMobileNumber: "ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
       enterLandArea: "ಭೂಪ್ರದೇಶವನ್ನು ನಮೂದಿಸಿ",
+      farmSize: 'ಫಾರ್ಮ್ ಗಾತ್ರ (ಎಕರೆ)',
+      location: 'ಸ್ಥಳ',
+      cameraPermissionError: 'ಕ್ಯಾಮೆರಾ ಅನುಮತಿಯನ್ನು ವಿನಂತಿಸಲು ವಿಫಲವಾಗಿದೆ.',
+      selectImageError: 'ಚಿತ್ರವನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ದೋಷ.',
+      analyzing: 'ಚಿತ್ರವನ್ನು ವಿಶ್ಲೇಷಿಸಿ',
+      analyzeError: 'ಚಿತ್ರವನ್ನು ವಿಶ್ಲೇಷಿಸುವಲ್ಲಿ ದೋಷ.',
+      home: 'ಮನೆ',
+      crops: 'ಬೆಳೆಗಳು',
+      disease: 'ರೋಗ',
+      weather: 'ಹವಾಮಾನ',
+      gallery: 'ಗ್ಯಾಲರಿಯಿಂದ ಆರಿಸಿ',
     }
   },
   mr: {
@@ -274,7 +304,6 @@ const resources = {
       cropRecommendation: "पीक शिफारस",
       diseaseDetection: "रोग ओळख",
       weather: "हवामान",
-      takePhoto: "फोटो घ्या",
       selectLanguage: "तुमची भाषा निवडा",
       continue: "पुढे जा",
       login: "लॉग इन करा",
@@ -297,14 +326,10 @@ const resources = {
       invalidMobile: "कृपया वैध 10-अंकी मोबाइल नंबर प्रविष्ट करा.",
       accountCreated: "खाते यशस्वीरित्या तयार केले! आपण आता लॉग इन आहात.",
       accountCreateFailed: "खाते तयार करण्यात अयशस्वी. कृपया पुन्हा प्रयत्न करा.",
-      welcomeBackUser: "पुन्हा स्वागत आहे, {{name}}!",
       noAccountFound: "या मोबाइल नंबरसह कोणतेही खाते आढळले नाही. कृपया नोंदणी करा.",
       alreadyHaveAccount: "आधीपासूनच खाते आहे?",
       dontHaveAccount: "खाते नाही?",
       goBack: "मागे जा",
-      changeLanguage: "भाषा बदला",
-      smartFarmingAssistant: "तुमचा स्मार्ट शेती सहाय्यक",
-      continueBoth: "Continue / पुढे जा",
       permissionDenied: "परवानगी नाकारली",
       locationPermission: "स्थानिक हवामान आणि सल्ला देण्यासाठी स्थान प्रवेश आवश्यक आहे.",
       micPermission: "व्हॉइस असिस्टंट वैशिष्ट्यासाठी मायक्रोफोन प्रवेश आवश्यक आहे.",
@@ -316,9 +341,20 @@ const resources = {
       weatherError: "हवामान डेटा आणण्यात अयशस्वी",
       voiceDemoError: "या डेमोमध्ये व्हॉइस रेकग्निशन उपलब्ध नाही",
       initError: "अ‍ॅप सुरू करण्यात अयशस्वी. कृपया पुन्हा सुरू करा.",
-       enterName: "तुमचे नाव प्रविष्ट करा",
-       enterMobileNumber: "तुमचा मोबाइल नंबर प्रविष्ट करा",
+      enterName: "तुमचे नाव प्रविष्ट करा",
+      enterMobileNumber: "तुमचा मोबाइल नंबर प्रविष्ट करा",
       enterLandArea: "जमिनीचे क्षेत्र प्रविष्ट करा",
+      farmSize: 'शेतीचा आकार (एकर)',
+      location: 'ठिकाण',
+      cameraPermissionError: 'कॅमेरा परवानगीची विनंती करण्यात अयशस्वी.',
+      selectImageError: 'प्रतिमा निवडण्यात त्रुटी.',
+      analyzing: 'प्रतिमेचे ವಿಶ्लेषण करा',
+      analyzeError: 'प्रतिमा विश्लेषणात त्रुटी.',
+      home: 'घर',
+      crops: 'पिके',
+      disease: 'रोग',
+      weather: 'हवामान',
+      gallery: 'गॅलरीतून निवडा',
     }
   },
   bn: {
@@ -327,7 +363,6 @@ const resources = {
       cropRecommendation: "ফসল সুপারিশ",
       diseaseDetection: "রোগ সনাক্তকরণ",
       weather: "আবহাওয়া",
-      takePhoto: "ছবি তুলুন",
       selectLanguage: "আপনার ভাষা নির্বাচন করুন",
       continue: "চালিয়ে যান",
       login: "লগইন করুন",
@@ -350,14 +385,10 @@ const resources = {
       invalidMobile: "অনুগ্রহ করে একটি বৈধ 10-সংখ্যার মোবাইল নম্বর লিখুন।",
       accountCreated: "অ্যাকাউন্ট সফলভাবে তৈরি করা হয়েছে! আপনি এখন লগ ইন করেছেন।",
       accountCreateFailed: "অ্যাকাউন্ট তৈরি করতে ব্যর্থ। অনুগ্রহ করে আবার চেষ্টা করুন।",
-      welcomeBackUser: "আবারও স্বাগতম, {{name}}!",
       noAccountFound: "এই মোবাইল নম্বর দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি। অনুগ্রহ করে নিবন্ধন করুন।",
       alreadyHaveAccount: "ইতিমধ্যে একটি অ্যাকাউন্ট আছে?",
       dontHaveAccount: "অ্যাকাউন্ট নেই?",
       goBack: "ফিরে যান",
-      changeLanguage: "ভাষা পরিবর্তন করুন",
-      smartFarmingAssistant: "আপনার স্মার্ট ফার্মিং সহকারী",
-      continueBoth: "Continue / চালিয়ে যান",
       permissionDenied: "অনুমতি প্রত্যাখ্যান করা হয়েছে",
       locationPermission: "স্থানীয় আবহাওয়া এবং পরামর্শ প্রদানের জন্য অবস্থান অ্যাক্সেস প্রয়োজন।",
       micPermission: "ভয়েস সহকারী বৈশিষ্ট্যের জন্য মাইক্রোফোন অ্যাক্সেস প্রয়োজন।",
@@ -370,11 +401,24 @@ const resources = {
       voiceDemoError: "এই ডেমোতে ভয়েস রিকগনিশন উপলব্ধ নেই",
       initError: "অ্যাপটি শুরু করতে ব্যর্থ। অনুগ্রহ করে পুনরায় চালু করুন।",
       enterName: "আপনার নাম লিখুন",
-       enterMobileNumber: "আপনার মোবাইল নম্বর লিখুন",
+      enterMobileNumber: "আপনার মোবাইল নম্বর লিখুন",
       enterLandArea: "জমির ক্ষেত্রফল লিখুন",
+      farmSize: 'খামারের আকার (একর)',
+      location: 'অবস্থান',
+      cameraPermissionError: 'ক্যামেরার অনুমতি অনুরোধ করতে ব্যর্থ।',
+      selectImageError: 'ছবি নির্বাচন করতে ত্রুটি।',
+      analyzing: 'ছবি বিশ্লেষণ করুন',
+      analyzeError: 'ছবি বিশ্লেষণে ত্রুটি।',
+      home: 'বাড়ি',
+      crops: 'ফসল',
+      disease: 'রোগ',
+      weather: 'আবহাওয়া',
+      takePhoto: 'ছবি তোলা',
+      gallery: 'গ্যালারি থেকে পছন্দ করুন',
     }
   }
 };
+
 
 class LanguageService {
   constructor() {
@@ -384,42 +428,61 @@ class LanguageService {
 
   async initialize() {
     try {
+      const stored = await AsyncStorage.getItem(STORAGE_KEY);
+      const lng = stored || this.currentLanguage;
+
       await i18next
         .use(initReactI18next)
         .init({
           resources,
-          lng: this.currentLanguage,
+          lng,
           fallbackLng: 'en',
           interpolation: {
             escapeValue: false,
           },
         });
 
+      this.currentLanguage = i18next.language || lng;
       this.initialized = true;
-      console.log('Language service initialized');
+
+      // keep internal state in sync
+      i18next.on('languageChanged', (lng) => {
+        this.currentLanguage = lng;
+      });
     } catch (error) {
       console.error('Language service initialization error:', error);
       throw error;
     }
   }
 
-  t = (key) => {
+  t = (key, options) => {
     if (!this.initialized) return key;
-    return i18next.t(key);
+    return i18next.t(key, options);
   };
 
   async changeLanguage(languageCode) {
     try {
       await i18next.changeLanguage(languageCode);
       this.currentLanguage = languageCode;
+      await AsyncStorage.setItem(STORAGE_KEY, languageCode);
     } catch (error) {
       console.error('Language change error:', error);
+      throw error;
     }
   }
 
   getCurrentLanguage() {
     return this.currentLanguage;
   }
+
+  // <-- Added: subscription helper so callers can listen to language changes
+  onLanguageChanged(cb) {
+    if (typeof cb !== 'function') return () => {};
+    i18next.on('languageChanged', cb);
+    // return unsubscribe function
+    return () => i18next.off('languageChanged', cb);
+  }
+  // <-- end added
 
   getAvailableLanguages() {
     return [

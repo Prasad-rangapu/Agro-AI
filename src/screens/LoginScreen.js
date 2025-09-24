@@ -18,6 +18,7 @@ const LoginScreen = ({ navigation }) => {
     }
     const user = await DatabaseService.loginUser(mobileNumber);
     if (user) {
+      await LanguageService.changeLanguage(user.language); // Set language after login
       Alert.alert(t('success'), t('welcomeBackUser', { name: user.name }));
       signIn(mobileNumber);
     } else {
