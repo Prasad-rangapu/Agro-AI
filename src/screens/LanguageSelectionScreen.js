@@ -26,7 +26,7 @@ const LanguageSelectionScreen = ({ navigation }) => {
         // no user -> go to auth flow (login/register)
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Auth' }],
+          routes: [{ name: 'AuthScreen', params: { selectedLanguage: selectedLang } }, { name: 'LoginScreen' }],
         });
       }
     } catch (err) {
