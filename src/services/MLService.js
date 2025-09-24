@@ -1,215 +1,74 @@
-class MLService {
-  constructor() {
-    this.isInitialized = false;
-    this.cropDatabase = this.initializeCropDatabase();
-    this.diseaseDatabase = this.initializeDiseaseDatabase();
-  }
+// import React, { useEffect, useState } from 'react';
+// import { View, Text, Button, ActivityIndicator, Alert } from 'react-native';
+// import * as Location from 'expo-location';
 
-  async initialize() {
+// export default function CropRecommendation(formData) {
+//   const [location, setLocation] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//   const [recommendations, setRecommendations] = useState(null);
 
-    try {
-      this.isInitialized = true;
-      console.log('ML Service initialized successfully');
-    } catch (error) {
-      console.error('ML Service initialization error:', error);
-      throw error;
-    }
-  }
+//   async function askLocationPermissionAndFetch() {
+//     setLoading(true);
+//     try {
+//       // Request permissions
+//       const { status } = await Location.requestForegroundPermissionsAsync();
+//       if (status !== 'granted') {
+//         Alert.alert('Permission Denied', 'Location permission is needed to fetch crop recommendations.');
+//         setLoading(false);
+//         return;
+//       }
 
-  
-  async recommendCrops(farmData) {
-    try {
-      const features = this.extractFeaturesForCropRecommendation(farmData);
+//       // Get current location
+//       const userLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+//       const { latitude, longitude } = userLocation.coords;
+//       setLocation({ latitude, longitude });
 
-      const recommendations = await this.getRuleBasedCropRecommendations(features);
+//       // Prepare request data
+//       const requestBody = {
+//         latitude,
+//         longitude,
+//         area_hectares: 2.0,           // Adjust as per your app input
+//         budget_inr: 50000,            // Adjust as per your app input
+//         planting_season: 'kharif'     // Example; you can customize via UI
+//         // Add preferred_crops or farmer_experience if needed
+//       };
 
-      return {
-        recommendations,
-        confidence: 0.85,
-        factors: ['Soil type', 'Climate', 'Season', 'Market demand'],
-        timestamp: Date.now()
-      };
-    } catch (error) {
-      console.error('Crop recommendation error:', error);
-      throw error;
-    }
-  }
+//       // Call backend
+//       const response = await fetch('http://localhost:8000/recommendations', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(requestBody),
+//       });
 
-  extractFeaturesForCropRecommendation(farmData) {
+//       if (!response.ok) {
+//         throw new Error(`Server error: ${response.status}`);
+//       }
 
-    return {
-      soilType: farmData.soilType || 'Loam',
-      area: farmData.farmArea || 1,
-      season: farmData.season || 'kharif',
-      temperature: farmData.weatherData?.temperature || 25,
-      rainfall: farmData.weatherData?.rainfall || 800,
-      budget: farmData.budget || 50000,
-    };
-  }
+//       const data = await response.json();
+//       setRecommendations(data);
 
-  async getRuleBasedCropRecommendations(features) {
+//     } catch (error) {
+//       Alert.alert('Error', error.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   }
 
-    const crops = this.cropDatabase;
-    const recommendations = [];
-
-    for (const crop of crops) {
-      const suitability = this.calculateCropSuitability(crop, features);
-
-      if (suitability.score > 0.6) {
-        recommendations.push({
-          crop: crop.name,
-          variety: crop.recommendedVariety,
-          suitabilityScore: suitability.score,
-          expectedYield: `${crop.averageYield} ${crop.yieldUnit}`,
-          profitMargin: this.calculateProfitMargin(crop, features),
-          plantingTime: crop.plantingTime,
-          harvestTime: crop.harvestTime,
-          reasons: suitability.reasons,
-          risks: crop.risks,
-          tips: crop.tips
-        });
-      }
-    }
-
-    return recommendations.sort((a, b) => b.suitabilityScore - a.suitabilityScore).slice(0, 5);
-  }
-
-  calculateCropSuitability(crop, features) {
-    let score = 0;
-    const reasons = [];
-
-    // Soil suitability
-    if (crop.suitableSoils.includes(features.soilType)) {
-      score += 0.3;
-      reasons.push(`Suitable for ${features.soilType} soil`);
-    }
-
-    // Season suitability
-    if (crop.seasons.includes(features.season)) {
-      score += 0.3;
-      reasons.push(`Good for ${features.season} season`);
-    }
-
-    // Climate suitability
-    if (features.temperature >= crop.tempRange[0] && features.temperature <= crop.tempRange[1]) {
-      score += 0.2;
-      reasons.push('Suitable temperature range');
-    }
-
-    // Area suitability
-    if (features.area >= crop.minArea) {
-      score += 0.2;
-      reasons.push('Adequate farm area');
-    }
-
-    return { score: Math.min(score, 1), reasons };
-  }
-
-  calculateProfitMargin(crop, features) {
-    const baseMargin = crop.avgProfitMargin;
-    const areaFactor = Math.min(features.area / crop.optimalArea, 1.2);
-    const budgetFactor = Math.min(features.budget / crop.avgCost, 1.1);
-
-    return Math.round(baseMargin * areaFactor * budgetFactor);
-  }
-
-  initializeCropDatabase() {
-    return [
-
-      {
-        name: 'Rice',
-        recommendedVariety: 'Basmati',
-        seasons: ['kharif'],
-        suitableSoils: ['Clay', 'Loam', 'Clay Loam'],
-        tempRange: [20, 35],
-        minArea: 0.5,
-        optimalArea: 2,
-        averageYield: 4000,
-        yieldUnit: 'kg/ha',
-        avgProfitMargin: 35,
-        avgCost: 40000,
-        plantingTime: 'June-July',
-        harvestTime: 'October-November',
-        risks: ['Blast disease', 'Brown plant hopper'],
-        tips: ['Maintain water level', 'Use certified seeds']
-      },
-      {
-        name: 'Wheat',
-        recommendedVariety: 'HD-2967',
-        seasons: ['rabi'],
-        suitableSoils: ['Loam', 'Clay Loam', 'Sandy Loam'],
-        tempRange: [15, 25],
-        minArea: 1,
-        optimalArea: 3,
-        averageYield: 3500,
-        yieldUnit: 'kg/ha',
-        avgProfitMargin: 30,
-        avgCost: 35000,
-        plantingTime: 'November-December',
-        harvestTime: 'April-May',
-        risks: ['Rust diseases', 'Aphids'],
-        tips: ['Timely sowing', 'Proper seed rate']
-      },
-      {
-        name: 'Tomato',
-        recommendedVariety: 'Pusa Ruby',
-        seasons: ['rabi', 'summer'],
-        suitableSoils: ['Loam', 'Sandy Loam'],
-        tempRange: [18, 29],
-        minArea: 0.25,
-        optimalArea: 1,
-        averageYield: 25000,
-        yieldUnit: 'kg/ha',
-        avgProfitMargin: 45,
-        avgCost: 50000,
-        plantingTime: 'October-November',
-        harvestTime: 'January-March',
-        risks: ['Late blight', 'Fruit borer'],
-        tips: ['Drip irrigation', 'Regular pruning']
-      },
-      {
-        name: 'Cotton',
-        recommendedVariety: 'Bt Cotton',
-        seasons: ['kharif'],
-        suitableSoils: ['Clay', 'Clay Loam', 'Sandy Loam'],
-        tempRange: [21, 30],
-        minArea: 2,
-        optimalArea: 5,
-        averageYield: 1500,
-        yieldUnit: 'kg/ha',
-        avgProfitMargin: 40,
-        avgCost: 45000,
-        plantingTime: 'May-June',
-        harvestTime: 'October-January',
-        risks: ['Bollworm', 'Whitefly'],
-        tips: ['Balanced fertilization', 'IPM practices']
-      }
-    ];
-  }
-
-  initializeDiseaseDatabase() {
-    return [
-
-      {
-        name: 'Leaf Spot',
-        description: 'Fungal disease causing circular spots on leaves',
-        treatments: ['Copper-based fungicide', 'Remove affected leaves'],
-        severity: 'Medium'
-      },
-      {
-        name: 'Powdery Mildew',
-        description: 'White powdery growth on leaf surfaces',
-        treatments: ['Sulfur spray', 'Improve air circulation'],
-        severity: 'Low'
-      },
-      {
-        name: 'Bacterial Blight',
-        description: 'Water-soaked lesions with yellow halos',
-        treatments: ['Copper bactericide', 'Remove affected parts'],
-        severity: 'High'
-      }
-    ];
-  }
-}
-
-export default new MLService();
+//   return (
+//     <View style={{ padding: 20 }}>
+//       <Button title="Get Crop Recommendations" onPress={askLocationPermissionAndFetch} />
+//       {loading && <ActivityIndicator size="large" style={{ marginTop: 20 }} />}
+//       {location && (
+//         <Text style={{ marginTop: 20 }}>Latitude: {location.latitude.toFixed(6)}, Longitude: {location.longitude.toFixed(6)}</Text>
+//       )}
+//       {recommendations && (
+//         <View style={{ marginTop: 20 }}>
+//           <Text>Farm ID: {recommendations.farm_id}</Text>
+//           <Text>Top Recommendation: {recommendations.recommendations[0]?.crop_name}</Text>
+//           <Text>Expected Profit: ₹{recommendations.recommendations[0]?.expected_profit_inr.toFixed(0)}</Text>
+//           {/* Render other details as needed */}
+//         </View>
+//       )}
+//     </View>
+//   );
+// }

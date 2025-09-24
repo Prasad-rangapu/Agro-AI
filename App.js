@@ -20,7 +20,7 @@ import WeatherScreen from './src/screens/WeatherScreen';
 
 // Services
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
-import MLService from './src/services/MLService';
+// import MLService from './src/services/MLService';
 import DatabaseService from './src/services/DatabaseService';
 import LanguageService from './src/services/LanguageService';
 import * as Location from 'expo-location';
@@ -107,7 +107,7 @@ function AppContent() {
   const initializeApp = async () => {
     try {
       // Initialize services
-      await MLService.initialize();
+      // await MLService.initialize();
       await DatabaseService.initialize(); // Initialize DatabaseService here
       await LanguageService.initialize();
 
