@@ -1,14 +1,15 @@
 import 'intl-pluralrules';
-import React, { useEffect, useState, createContext, useContext } from 'react';
+import React, { useEffect, useState, useContext } from "react";
 import { Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-
-
+// Make sure the path is correct
+import DatabaseService from './src/services/DatabaseService';
 // Screens
+import * as Location from 'expo-location';
 import HomeScreen from './src/screens/HomeScreen';
 import CropRecommendationScreen from './src/screens/CropRecommendationScreen';
 import DiseaseDetectionScreen from './src/screens/DiseaseDetectionScreen';
@@ -75,6 +76,7 @@ function MainTabs() {
 
 function AppContent() {
   const [isInitialized, setIsInitialized] = useState(false);
+  const [location, setLocation] = useState(null);
   const { userToken, restoreToken } = useContext(AuthContext);
   const [fontsLoaded] = useFonts({
     ...Ionicons.font,
@@ -90,21 +92,44 @@ function AppContent() {
     if (fontsLoaded) restoreToken();
   }, [fontsLoaded]);
 
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          LanguageService.t('error'),
+          LanguageService.t('locationPermissionDenied')
+        );
+        return;
+      }
+
+      let locationData = await Location.getCurrentPositionAsync({});
+      if (locationData) {
+        setLocation(locationData);
+        console.log("Location data fetched:", locationData);
+      } else {
+        console.log("Location data is null.");
+      }
+    })();
+  }, []);
+
   const initializeApp = async () => {
     try {
       // Initialize services
       await MLService.initialize();
-      await LanguageService.initialize();
+      await DatabaseService.initialize(); // Initialize DatabaseService here
+          await LanguageService.initialize();
+      } catch (error) {
+          console.error('Error fetching location:', error);
+          Alert.alert(LanguageService.t('error'), LanguageService.t('locationError'));
+      }
 
       // Check if user is already logged in
       // restoreToken() is now called in the useEffect above
 
       setIsInitialized(true);
       console.log('AgroAI app initialized successfully');
-    } catch (error) {
-      console.error('App initialization error:', error);
-      Alert.alert(LanguageService.t('error'), LanguageService.t('initError'));
-    }
+   
   };
 
   if (!isInitialized || !fontsLoaded) {
@@ -116,7 +141,11 @@ function AppContent() {
       {userToken ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="Weather">
+            {(props) => <WeatherScreen {...props} location={location} />}
+          </Stack.Screen>
         </Stack.Navigator>
+
       ) : (
         <AuthStack />
       )}

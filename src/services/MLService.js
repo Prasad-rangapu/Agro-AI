@@ -6,6 +6,7 @@ class MLService {
   }
 
   async initialize() {
+
     try {
       this.isInitialized = true;
       console.log('ML Service initialized successfully');
@@ -19,6 +20,7 @@ class MLService {
   async recommendCrops(farmData) {
     try {
       const features = this.extractFeaturesForCropRecommendation(farmData);
+
       const recommendations = await this.getRuleBasedCropRecommendations(features);
 
       return {
@@ -34,6 +36,7 @@ class MLService {
   }
 
   extractFeaturesForCropRecommendation(farmData) {
+
     return {
       soilType: farmData.soilType || 'Loam',
       area: farmData.farmArea || 1,
@@ -45,6 +48,7 @@ class MLService {
   }
 
   async getRuleBasedCropRecommendations(features) {
+
     const crops = this.cropDatabase;
     const recommendations = [];
 
@@ -111,6 +115,7 @@ class MLService {
 
   initializeCropDatabase() {
     return [
+
       {
         name: 'Rice',
         recommendedVariety: 'Basmati',
@@ -184,6 +189,7 @@ class MLService {
 
   initializeDiseaseDatabase() {
     return [
+
       {
         name: 'Leaf Spot',
         description: 'Fungal disease causing circular spots on leaves',

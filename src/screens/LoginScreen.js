@@ -34,7 +34,7 @@ const LoginScreen = ({ navigation }) => {
         <Text style={styles.label}>{t('mobileNumber')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="9876543210"
+         placeholder="9876543210"
           keyboardType="phone-pad"
           value={mobileNumber}
           onChangeText={setMobileNumber}

@@ -16,14 +16,14 @@ const AuthScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity
+       <TouchableOpacity
           style={styles.loginButton}
-          onPress={() => navigation.navigate('Login')}
+         onPress={() => navigation.navigate('Login')}
         >
           <Text style={styles.buttonText}>{t('login')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.registerButton}
+         style={styles.registerButton}
           onPress={() => navigation.navigate('Register')}
         >
           <Text style={styles.buttonText}>{t('register')}</Text>
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5', justifyContent: 'center', padding: 20 },
   header: { alignItems: 'center', marginBottom: 80 },
   title: { fontSize: 40, fontWeight: 'bold', color: '#333', marginTop: 20 },
-  subtitle: { fontSize: 16, color: '#666' },
+ subtitle: { fontSize: 16, color: '#666' },
   buttonContainer: { width: '100%' },
   loginButton: { backgroundColor: '#2E7D32', padding: 15, borderRadius: 10, alignItems: 'center', marginBottom: 20 },
   registerButton: { backgroundColor: '#4CAF50', padding: 15, borderRadius: 10, alignItems: 'center' },

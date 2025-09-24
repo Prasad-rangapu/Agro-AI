@@ -50,6 +50,9 @@ const resources = {
       voiceDemoError: "Voice recognition not available in this demo",
       initError: "Failed to initialize the app. Please restart.",
       // Add more translations as needed
+       enterName: "Enter your name",
+       enterMobileNumber: "Enter your mobile number",
+      enterLandArea: "Enter land area",
     }
   },
   hi: {
@@ -99,6 +102,9 @@ const resources = {
       weatherError: "मौसम डेटा लाने में विफल",
       voiceDemoError: "इस डेमो में आवाज पहचान उपलब्ध नहीं है",
       initError: "ऐप को प्रारंभ करने में विफल। कृपया पुनरारंभ करें।",
+       enterName: "अपना नाम दर्ज करें",
+       enterMobileNumber: "अपना मोबाइल नंबर दर्ज करें",
+      enterLandArea: "जमीन का क्षेत्रफल दर्ज करें",
     }
   },
   te: {
@@ -148,6 +154,9 @@ const resources = {
       weatherError: "వాతావరణ డేటాను పొందడంలో విఫలమైంది",
       voiceDemoError: "ఈ డెమోలో వాయిస్ రికగ్నిషన్ అందుబాటులో లేదు",
       initError: "యాప్‌ను ప్రారంభించడంలో విఫలమైంది. దయచేసి పునఃప్రారంభించండి.",
+       enterName: "మీ పేరును నమోదు చేయండి",
+       enterMobileNumber: "మీ మొబైల్ నంబర్‌ను నమోదు చేయండి",
+      enterLandArea: "భూమి విస్తీర్ణాన్ని నమోదు చేయండి",
     }
   },
   ta: {
@@ -197,6 +206,9 @@ const resources = {
       weatherError: "வானிலை தரவைப் பெற முடியவில்லை",
       voiceDemoError: "இந்த டெமோவில் குரல் గుర్తింపు கிடைக்கவில்லை",
       initError: "பயன்பாட்டைத் தொடங்குவதில் தோல்வி. தயவுசெய்து மீண்டும் தொடங்கவும்.",
+       enterName: "உங்கள் பெயரை உள்ளிடவும்",
+       enterMobileNumber: "உங்கள் மொபைல் எண்ணை உள்ளிடவும்",
+      enterLandArea: "நிலப் பரப்பளவை உள்ளிடவும்",
     }
   },
   kn: {
@@ -246,6 +258,9 @@ const resources = {
       weatherError: "ಹವಾಮಾನ ಡೇಟಾವನ್ನು ತರಲು ವಿಫಲವಾಗಿದೆ",
       voiceDemoError: "ಈ ಡೆಮೊದಲ್ಲಿ ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆ ಲಭ್ಯವಿಲ್ಲ",
       initError: "ಅಪ್ಲಿಕೇಶನ್ ಅನ್ನು ಪ್ರಾರಂಭಿಸಲು ವಿಫಲವಾಗಿದೆ. ದಯವಿಟ್ಟು ಮರುಪ್ರಾರಂಭಿಸಿ.",
+       enterName: "ನಿಮ್ಮ ಹೆಸರನ್ನು ನಮೂದಿಸಿ",
+       enterMobileNumber: "ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+      enterLandArea: "ಭೂಪ್ರದೇಶವನ್ನು ನಮೂದಿಸಿ",
     }
   },
   mr: {
@@ -295,6 +310,9 @@ const resources = {
       weatherError: "हवामान डेटा आणण्यात अयशस्वी",
       voiceDemoError: "या डेमोमध्ये व्हॉइस रेकग्निशन उपलब्ध नाही",
       initError: "अ‍ॅप सुरू करण्यात अयशस्वी. कृपया पुन्हा सुरू करा.",
+       enterName: "तुमचे नाव प्रविष्ट करा",
+       enterMobileNumber: "तुमचा मोबाइल नंबर प्रविष्ट करा",
+      enterLandArea: "जमिनीचे क्षेत्र प्रविष्ट करा",
     }
   },
   bn: {
@@ -344,6 +362,9 @@ const resources = {
       weatherError: "আবহাওয়ার ডেটা আনতে ব্যর্থ",
       voiceDemoError: "এই ডেমোতে ভয়েস রিকগনিশন উপলব্ধ নেই",
       initError: "অ্যাপটি শুরু করতে ব্যর্থ। অনুগ্রহ করে পুনরায় চালু করুন।",
+      enterName: "আপনার নাম লিখুন",
+       enterMobileNumber: "আপনার মোবাইল নম্বর লিখুন",
+      enterLandArea: "জমির ক্ষেত্রফল লিখুন",
     }
   }
 };

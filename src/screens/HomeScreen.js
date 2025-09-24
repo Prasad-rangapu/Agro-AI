@@ -121,7 +121,7 @@ const HomeScreen = ({ navigation }) => {
           disabled={isVoiceListening}
         >
           <Ionicons name={isVoiceListening ? "mic-off" : "mic-outline"} size={24} color="white" />
-          <Text style={styles.actionButtonText}>Voice Assistant</Text>
+         <Text style={styles.actionButtonText}>{t('voiceAssistant')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   listeningButton: {
-    backgroundColor: '#F44336',
+   backgroundColor: '#F44336',
   },
   actionButtonText: {
     color: 'white',

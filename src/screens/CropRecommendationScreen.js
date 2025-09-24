@@ -94,7 +94,7 @@ const CropRecommendationScreen = () => {
           onChangeText={(text) =>
             setFarmData((prev) => ({ ...prev, season: text }))
           }
-          placeholder="Enter season (e.g., kharif)"
+          placeholder={t('enterSeason')}
         />
       </View>
 
@@ -106,7 +106,7 @@ const CropRecommendationScreen = () => {
           onChangeText={(text) =>
             setFarmData((prev) => ({ ...prev, soilType: text }))
           }
-          placeholder="Enter soil type (e.g., Loam)"
+         placeholder={t('enterSoilType')}
         />
       </View>
     </View>
@@ -176,7 +176,7 @@ const CropRecommendationScreen = () => {
             size={40}
             color="#ccc"
           />
-          <Text style={styles.noRecommendationsText}>
+       <Text style={styles.noRecommendationsText}>
             Click "Get AI Recommendations" to see crop suggestions
           </Text>
         </View>
@@ -202,7 +202,7 @@ const CropRecommendationScreen = () => {
         disabled={isLoading}
       >
         <Ionicons name="bulb-outline" size={24} color="white" />
-        <Text style={styles.buttonText}>
+       <Text style={styles.buttonText}>
           {isLoading ? 'Getting Recommendations...' : 'Get AI Recommendations'}
         </Text>
       </TouchableOpacity>
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  noRecommendationsText: {
+ noRecommendationsText: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
