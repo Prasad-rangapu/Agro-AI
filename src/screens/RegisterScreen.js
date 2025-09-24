@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, Pressable } from 'react-native';
 import * as Location from 'expo-location';
+import { Camera } from 'expo-camera';
 import { Audio } from 'expo-av';
 import LanguageService from '../services/LanguageService';
 import DatabaseService from '../services/DatabaseService';
@@ -62,6 +63,13 @@ const RegisterScreen = ({ navigation }) => {
       await DatabaseService.createUserProfile(newUser);
       Alert.alert(t('success'), t('accountCreated'));
       signIn(newUser.mobileNumber);
+
+      // Request camera permissions after successful registration
+      const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
+      if (cameraStatus !== 'granted') {
+        Alert.alert(t('permissionDenied'), t('cameraPermission'));
+      }
+
     } catch (error) {
       Alert.alert(t('error'), t('accountCreateFailed'));
     }
