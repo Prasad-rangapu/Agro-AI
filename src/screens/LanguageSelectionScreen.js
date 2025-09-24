@@ -24,10 +24,7 @@ const LanguageSelectionScreen = ({ navigation }) => {
         });
       } else {
         // no user -> go to auth flow (login/register)
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'AuthScreen', params: { selectedLanguage: selectedLang } }, { name: 'LoginScreen' }],
-        });
+        navigation.navigate('AuthScreen', { selectedLanguage: selectedLang });
       }
     } catch (err) {
       console.error('Language select error', err);
@@ -71,7 +68,7 @@ const LanguageSelectionScreen = ({ navigation }) => {
       </View>
 
       <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-        <Text style={styles.continueButtonText}>{t('continueBoth')}</Text>
+        <Text style={styles.continueButtonText}>{t('continue')}</Text>
         <Ionicons name="arrow-forward-outline" size={20} color="white" style={{ marginLeft: 10 }} />
       </TouchableOpacity>
     </View>
