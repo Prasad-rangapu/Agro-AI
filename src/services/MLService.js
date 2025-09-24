@@ -16,7 +16,7 @@ class MLService {
     }
   }
 
-  // Crop Recommendation System
+  
   async recommendCrops(farmData) {
     try {
       const features = this.extractFeaturesForCropRecommendation(farmData);

@@ -14,7 +14,9 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
+import NetInfo from '@react-native-community/netinfo';
 import LanguageService from '../services/LanguageService';
+import DatabaseService from '../services/DatabaseService';
 
 const {
   EXPO_PUBLIC_WEATHER_API_KEY: API_KEY,
@@ -29,9 +31,11 @@ const WeatherScreen = ({ location: injectedLocation }) => {
   const [placeName, setPlaceName] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isUsingCache, setIsUsingCache] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const t = LanguageService.t;
 
-  // Resolve coordinates: use injected prop if present; otherwise request permission and read current position
+  // Resolve coordinates: injected -> permission+current -> defaults
   useEffect(() => {
     let mounted = true;
 
@@ -80,89 +84,10 @@ const WeatherScreen = ({ location: injectedLocation }) => {
     }
 
     resolveCoords();
-
     return () => {
       mounted = false;
     };
-  }, [injectedLocation]); // Re-resolve if parent provides a new location [web:45][web:57]
-
-  // Fetch weather by lat/lon and set place name from API, falling back to reverse geocoding
-  const fetchWeather = useCallback(async (lat, lon) => {
-    try {
-      const url = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${lat},${lon}&days=5&aqi=no&alerts=no`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error('Weather fetch failed:', response.status, errText);
-        throw new Error('Failed to fetch weather data');
-      }
-      const data = await response.json();
-
-      const current = data.current;
-      const forecastDays = data.forecast?.forecastday || [];
-
-      const weatherData = {
-        temperature: current?.temp_c,
-        condition: current?.condition?.text || 'N/A',
-        humidity: current?.humidity,
-        windSpeed: current?.wind_kph,
-        rainfall: current?.precip_mm,
-      };
-      setWeather(weatherData);
-
-      const loc = data.location || {};
-      const fromApi = [loc.name, loc.region, loc.country].filter(Boolean).join(', ');
-      let nameToShow = fromApi;
-
-      if (!nameToShow && lat && lon) {
-        try {
-          const rg = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
-          if (rg && rg.length > 0) {
-            const first = rg[0];
-            nameToShow = [first.city || first.subregion || first.region, first.country]
-              .filter(Boolean)
-              .join(', ');
-          }
-        } catch {
-          // Ignore reverse geocode failures
-        }
-      }
-      setPlaceName(nameToShow);
-
-      const forecastData = forecastDays.map((day) => ({
-        day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
-        high: day.day?.maxtemp_c,
-        low: day.day?.mintemp_c,
-        condition: day.day?.condition?.text || 'N/A',
-        rain: day.day?.totalprecip_mm ?? 0,
-      }));
-      setForecast(forecastData);
-    } catch (error) {
-      console.error('Fetch weather error:', error);
-      Alert.alert(t('error'), t('weatherError') || 'Unable to fetch weather.');
-    }
-  }, [API_KEY, t]); // Stable deps for useCallback [web:50][web:57]
-
-  // Fetch when coordinates are available or change
-  useEffect(() => {
-    let mounted = true;
-    async function go() {
-      if (!coords?.latitude || !coords?.longitude) return;
-      setLoading(true);
-      await fetchWeather(coords.latitude, coords.longitude);
-      if (!mounted) return;
-      setLoading(false);
-    }
-    go();
-    return () => { mounted = false; };
-  }, [coords, fetchWeather]); // Refetch on coords change [web:57]
-
-  const onRefresh = useCallback(async () => {
-    if (!coords) return;
-    setIsRefreshing(true);
-    await fetchWeather(coords.latitude, coords.longitude);
-    setIsRefreshing(false);
-  }, [coords, fetchWeather]); // Pull-to-refresh uses latest coords [web:57]
+  }, [injectedLocation]); // Foreground permission is required for geocoding on Android per Expo docs [web:11]
 
   const getIcon = (condition) => {
     const c = (condition || '').toLowerCase();
@@ -173,14 +98,150 @@ const WeatherScreen = ({ location: injectedLocation }) => {
     return 'partly-sunny';
   };
 
+  // Core fetch with offline-first logic and write-through caching
+  const fetchWeather = useCallback(async (lat, lon, opts = {}) => {
+    const { isOnline } = opts;
+    const locationKey = `${lat.toFixed(4)},${lon.toFixed(4)}`;
+
+    // If known offline, try cache immediately
+    if (isOnline === false) {
+      try {
+        const cached = await DatabaseService.getWeatherCache(locationKey);
+        if (cached && cached.data) {
+          setWeather(cached.data.weather);
+          setForecast(cached.data.forecast || []);
+          setPlaceName(cached.data.placeName || '');
+          setIsUsingCache(true);
+          setLastUpdated(cached.timestamp || null);
+          return;
+        }
+      } catch {}
+      Alert.alert(t('error'), t('weatherError') || 'Unable to fetch weather.');
+      return;
+    }
+
+    try {
+      const url = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${lat},${lon}&days=5&aqi=no&alerts=no`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('Weather fetch failed:', response.status, errText);
+        throw new Error('Failed to fetch weather data');
+      }
+      const data = await response.json();
+
+      const current = data.current || {};
+      const forecastDays = data.forecast?.forecastday || [];
+
+      const weatherData = {
+        temperature: current?.temp_c,
+        condition: current?.condition?.text || 'N/A',
+        humidity: current?.humidity,
+        windSpeed: current?.wind_kph,
+        rainfall: current?.precip_mm,
+      };
+
+      const loc = data.location || {};
+      let nameToShow = [loc.name, loc.region, loc.country].filter(Boolean).join(', ');
+
+      if (!nameToShow && lat && lon) {
+        try {
+          const rg = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+          if (rg && rg.length > 0) {
+            const first = rg[0];
+            nameToShow = [first.city || first.subregion || first.region, first.country]
+              .filter(Boolean)
+              .join(', ');
+          }
+        } catch {}
+      }
+
+      const forecastData = forecastDays.map((day) => ({
+        day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        high: day.day?.maxtemp_c,
+        low: day.day?.mintemp_c,
+        condition: day.day?.condition?.text || 'N/A',
+        rain: day.day?.totalprecip_mm ?? 0,
+      }));
+
+      // Update UI
+      setWeather(weatherData);
+      setPlaceName(nameToShow);
+      setForecast(forecastData);
+      setIsUsingCache(false);
+      setLastUpdated(Date.now());
+
+      // Write-through cache
+      try {
+        await DatabaseService.cacheWeather(
+          locationKey,
+          JSON.stringify({ weather: weatherData, forecast: forecastData, placeName: nameToShow })
+        );
+      } catch (dbErr) {
+        console.warn('Failed to cache weather:', dbErr);
+      }
+    } catch (error) {
+      console.error('Fetch weather error:', error);
+
+      // Fallback to cache on error
+      try {
+        const cached = await DatabaseService.getWeatherCache(locationKey);
+        if (cached && cached.data) {
+          setWeather(cached.data.weather);
+          setForecast(cached.data.forecast || []);
+          setPlaceName(cached.data.placeName || '');
+          setIsUsingCache(true);
+          setLastUpdated(cached.timestamp || null);
+          return;
+        }
+      } catch (cacheErr) {
+        console.warn('Error reading weather cache:', cacheErr);
+      }
+
+      Alert.alert(t('error'), t('weatherError') || 'Unable to fetch weather.');
+    }
+  }, [API_KEY, t]); // NetInfo-driven branch + SQLite write-through per Expo/NetInfo usage [web:36][web:18]
+
+  // Fetch when coordinates are set; use NetInfo snapshot to choose path
+  useEffect(() => {
+    let mounted = true;
+    async function go() {
+      if (!coords?.latitude || !coords?.longitude) return;
+      setLoading(true);
+
+      // Connectivity snapshot
+      const net = await NetInfo.fetch();
+      const online = !!(net.isConnected && net.isInternetReachable !== false);
+
+      await fetchWeather(coords.latitude, coords.longitude, { isOnline: online });
+
+      if (!mounted) return;
+      setLoading(false);
+    }
+    go();
+    return () => { mounted = false; };
+  }, [coords, fetchWeather]); // NetInfo.fetch returns connection state with isConnected/isInternetReachable [web:36][web:40]
+
+  const onRefresh = useCallback(async () => {
+    if (!coords) return;
+    setIsRefreshing(true);
+    const net = await NetInfo.fetch();
+    const online = !!(net.isConnected && net.isInternetReachable !== false);
+    await fetchWeather(coords.latitude, coords.longitude, { isOnline: online });
+    setIsRefreshing(false);
+  }, [coords, fetchWeather]); // Same offline-first refresh using NetInfo snapshot [web:36]
+
   if (loading || !weather) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color="#2E7D32" />
         <Text style={{ marginTop: 8 }}>{t('loadingWeather')}</Text>
+        {isUsingCache && <Text style={{ marginTop: 6, color: '#666' }}>Showing cached data</Text>}
       </View>
     );
   }
+
+  const lastUpdatedText = lastUpdated ? new Date(lastUpdated).toLocaleString() : null;
 
   return (
     <ScrollView
@@ -196,6 +257,14 @@ const WeatherScreen = ({ location: injectedLocation }) => {
         </TouchableOpacity>
       </View>
 
+      {isUsingCache && (
+        <View style={{ backgroundColor: '#fff3cd', padding: 8, alignItems: 'center' }}>
+          <Text style={{ color: '#856404' }}>
+            Using cached weather{lastUpdatedText ? ` • Last updated ${lastUpdatedText}` : ''}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.currentCard}>
         <View style={styles.curHeader}>
           <View>
@@ -207,7 +276,7 @@ const WeatherScreen = ({ location: injectedLocation }) => {
         </View>
         <View style={styles.grid}>
           <View style={styles.item}>
-           <Ionicons name="water-outline" size={20} color="#2196F3" />
+            <Ionicons name="water-outline" size={20} color="#2196F3" />
             <Text style={styles.label}>{t('humidity')}</Text>
             <Text style={styles.value}>{weather.humidity}%</Text>
           </View>
@@ -296,7 +365,7 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   fcDay: { fontSize: 12, color: '#666', marginBottom: 5 },
- fcHigh: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  fcHigh: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   fcLow: { fontSize: 14, color: '#666' },
   fcRain: { fontSize: 12, color: '#2196F3', marginTop: 2 },
 });
