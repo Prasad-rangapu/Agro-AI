@@ -7,6 +7,8 @@ import * as Location from 'expo-location';
 import axios from 'axios';
 import RecommendationsList from './components/RecommendationsList';
 import SoilAnalysis from './components/SoilAnalysis';
+import NetInfo from '@react-native-community/netinfo';
+import DatabaseService from '../../src/services/DatabaseService';
 
 const API_BASE_URL = 'http://localhost:8000';
 
@@ -18,6 +20,7 @@ export default function App() {
   const [recommendations, setRecommendations] = useState(null);
 
   useEffect(() => {
+    DatabaseService.initialize();
     getLocation();
   }, []);
 
@@ -37,19 +40,40 @@ export default function App() {
   const getRecommendations = async () => {
     if (!location) return;
     setLoading(true);
-    try {
-      const response = await axios.post(API_BASE_URL + '/recommendations', {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        area_hectares: parseFloat(area),
-        budget_inr: parseFloat(budget),
-        planting_season: 'kharif'
-      });
-      setRecommendations(response.data);
-    } catch (error) {
-      Alert.alert('Error', 'Could not get recommendations');
-    } finally {
-      setLoading(false);
+
+    const netInfo = await NetInfo.fetch();
+
+    if (netInfo.isConnected) {
+      try {
+        const response = await axios.post(API_BASE_URL + '/recommendations', {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          area_hectares: parseFloat(area),
+          budget_inr: parseFloat(budget),
+          planting_season: 'kharif'
+        });
+        setRecommendations(response.data);
+        const locationKey = `${location.latitude.toFixed(4)},${location.longitude.toFixed(4)}`;
+        await DatabaseService.cacheRecommendations(locationKey, JSON.stringify(response.data));
+      } catch (error) {
+        Alert.alert('Error', 'Could not get recommendations');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      try {
+        const locationKey = `${location.latitude.toFixed(4)},${location.longitude.toFixed(4)}`;
+        const cachedData = await DatabaseService.getRecommendationsCache(locationKey);
+        if (cachedData) {
+          setRecommendations(cachedData.data);
+        } else {
+          Alert.alert('Offline', 'You are offline and no recommendations are cached.');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Could not load cached recommendations.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -75,7 +99,7 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {loading && <ActivityIndicator size="large" color="#4CAF50" style={{margin: 20}} />}
+            {loading && <View><ActivityIndicator size="large" color="#4CAF50" style={{margin: 20}} /><Text style={{textAlign: 'center'}}>Please wait while fetching recommendations...</Text></View>}
       {recommendations && <SoilAnalysis data={recommendations} />}
       {recommendations && (
         <RecommendationsList 

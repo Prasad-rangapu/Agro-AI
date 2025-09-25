@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Button,
   TextInput,
   ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Animated
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import NetInfo from '@react-native-community/netinfo';
+import DatabaseService from '../services/DatabaseService';
 
 export default function CropRecommendationScreen() {
   const [location, setLocation] = useState(null);
@@ -22,50 +24,102 @@ export default function CropRecommendationScreen() {
   });
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState(null);
+  const [scaleValue] = useState(new Animated.Value(1));
+
+  useEffect(() => {
+    DatabaseService.initialize();
+  }, []);
 
   async function getRecommendations() {
     setLoading(true);
 
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'Location permission is needed to fetch crop recommendations.'
-        );
+    const netInfo = await NetInfo.fetch();
+
+    if (netInfo.isConnected) {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Denied',
+            'Location permission is needed to fetch crop recommendations.'
+          );
+          setLoading(false);
+          return;
+        }
+
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc.coords);
+        const locationKey = `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
+
+        const requestBody = {
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          area_hectares: parseFloat(farmData.farmArea),
+          budget_inr: parseFloat(farmData.budget),
+          planting_season: farmData.season,
+        };
+
+        const response = await fetch('http://10.13.14.15:8000/recommendations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setRecommendations(data);
+        await DatabaseService.cacheRecommendations(locationKey, JSON.stringify(data));
+      } catch (error) {
+        Alert.alert('Error', error.message);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc.coords);
-
-      const requestBody = {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        area_hectares: parseFloat(farmData.farmArea),
-        budget_inr: parseFloat(farmData.budget),
-        planting_season: farmData.season,
-      };
-
-      const response = await fetch('http://10.13.14.15:8000/recommendations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server Error: ${response.status}`);
+    } else {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert(
+            'Permission Denied',
+            'Location permission is needed to fetch crop recommendations.'
+          );
+          setLoading(false);
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({});
+        const locationKey = `${loc.coords.latitude.toFixed(4)},${loc.coords.longitude.toFixed(4)}`;
+        const cachedData = await DatabaseService.getRecommendationsCache(locationKey);
+        if (cachedData) {
+          console.log("Loaded recommendations from cache");
+          setRecommendations(cachedData.data);
+        } else {
+          Alert.alert('Offline', 'You are offline and no recommendations are cached.');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Could not load cached recommendations.');
+      } finally {
+        setLoading(false);
       }
-
-      const data = await response.json();
-      setRecommendations(data);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
     }
   }
+
+  const handlePressIn = () => {
+    Animated.spring(scaleValue, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleValue, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -101,15 +155,19 @@ export default function CropRecommendationScreen() {
         />
 
         <TouchableOpacity
-          style={styles.button}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={{ transform: [{ scale: scaleValue }] }}
           onPress={getRecommendations}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>Get Recommendations</Text>
+          <Animated.View style={styles.button}>
+            <Text style={styles.buttonText}>Get Recommendations</Text>
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
-      {loading && <ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 20 }} />}
+            {loading && <View><ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 20 }} /><Text style={{textAlign: 'center'}}>Please wait while fetching recommendations...</Text></View>}
 
       
 
@@ -152,95 +210,101 @@ export default function CropRecommendationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F0F4F8',
   },
   header: {
     backgroundColor: '#2E7D32',
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingTop: 60,
+    paddingBottom: 30,
     paddingHorizontal: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
   },
   formContainer: {
-    padding: 20,
+    padding: 25,
     backgroundColor: 'white',
     margin: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
   },
   label: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333'
   },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
-    padding: 10,
-    marginBottom: 15,
-    borderRadius: 5,
-    backgroundColor: '#E8F5E9',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    marginBottom: 20,
+    borderRadius: 10,
+    backgroundColor: '#F7F7F7',
+    fontSize: 16,
   },
   button: {
-    backgroundColor: '#2E7D32',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#4CAF50',
+    padding: 18,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 16,
-  },
-  locationText: {
-    textAlign: 'center',
-    marginTop: 15,
-    fontStyle: 'italic',
-    color: '#555',
+    fontSize: 18,
   },
   recommendationsContainer: {
     marginTop: 20,
     paddingHorizontal: 20,
   },
   recommendationsTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
     textAlign: 'center',
+    color: '#2E7D32'
   },
   recommendationCard: {
     backgroundColor: 'white',
-    padding: 15,
+    padding: 20,
     marginBottom: 15,
-    borderRadius: 10,
+    borderRadius: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cropName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 12,
     color: '#2E7D32',
   },
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   detailText: {
-    marginLeft: 10,
-    fontSize: 14,
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#555'
   },
 });

@@ -54,6 +54,12 @@ async function initialize() {
         data TEXT NOT NULL,
         timestamp INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS recommendations_cache (
+        id INTEGER PRIMARY KEY NOT NULL,
+        location TEXT UNIQUE,
+        data TEXT NOT NULL,
+        timestamp INTEGER NOT NULL
+      );
     `);
 
     // Migration guard for language column
@@ -190,5 +196,35 @@ const DatabaseService = {
   cacheWeather,
   getWeatherCache,
 };
+
+async function cacheRecommendations(locationKey, data) {
+  console.log("Caching recommendations for", locationKey);
+  const database = await getDb();
+  await database.runAsync(
+    `INSERT OR REPLACE INTO recommendations_cache (location, data, timestamp) VALUES (?, ?, ?);`,
+    [locationKey, data, Date.now()]
+  );
+}
+
+async function getRecommendationsCache(locationKey) {
+  console.log("Getting cached recommendations for", locationKey);
+  const database = await getDb();
+  const rows = await database.getAllAsync(
+    `SELECT data, timestamp FROM recommendations_cache WHERE location = ? LIMIT 1;`,
+    [locationKey]
+  );
+  if (!rows || rows.length === 0) return null;
+  try {
+    return { data: JSON.parse(rows[0].data), timestamp: rows[0].timestamp };
+  } catch (e) {
+    try {
+      await database.runAsync(`DELETE FROM recommendations_cache WHERE location = ?;`, [locationKey]);
+    } catch {}
+    return null;
+  }
+}
+
+DatabaseService.cacheRecommendations = cacheRecommendations;
+DatabaseService.getRecommendationsCache = getRecommendationsCache;
 
 export default DatabaseService;
